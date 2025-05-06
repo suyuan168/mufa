@@ -49,6 +49,12 @@ const Auth = (() => {
   // 发送验证码
   const sendVerificationCode = async (phone) => {
     try {
+      // 调试模式 - 使用模拟响应
+      if (phone === '13800000000') {
+        showMessage('测试用户验证码已发送: 1234', false);
+        return { success: true };
+      }
+      
       const response = await fetch(`${API_URL}/send-code`, {
         method: 'POST',
         headers: {
@@ -75,6 +81,25 @@ const Auth = (() => {
   // 账号密码登录
   const loginWithAccount = async (username, password) => {
     try {
+      // 测试账号直接登录 - 跳过API调用
+      if (username === 'test' && password === '123456') {
+        console.log('使用测试账号登录');
+        // 使用模拟数据
+        const userData = {
+          id: 1,
+          username: 'test',
+          nickname: '测试用户',
+          level: 1
+        };
+        const token = 'test_token_' + Date.now();
+        
+        // 保存token和用户数据
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(userData));
+        
+        return { success: true };
+      }
+      
       const response = await fetch(`${API_URL}/login-account`, {
         method: 'POST',
         headers: {
@@ -98,6 +123,7 @@ const Auth = (() => {
       
       return { success: true };
     } catch (error) {
+      console.error('登录错误:', error);
       return {
         success: false,
         message: error.message
@@ -108,6 +134,26 @@ const Auth = (() => {
   // 手机验证码登录
   const loginWithPhone = async (phone, code) => {
     try {
+      // 测试号码直接登录 - 跳过API调用
+      if (phone === '13800000000' && code === '1234') {
+        console.log('使用测试手机号登录');
+        // 使用模拟数据
+        const userData = {
+          id: 1,
+          username: 'phone_test',
+          nickname: '测试手机用户',
+          phone: '13800000000',
+          level: 1
+        };
+        const token = 'test_phone_token_' + Date.now();
+        
+        // 保存token和用户数据
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(userData));
+        
+        return { success: true };
+      }
+      
       const response = await fetch(`${API_URL}/login-phone`, {
         method: 'POST',
         headers: {
@@ -131,6 +177,7 @@ const Auth = (() => {
       
       return { success: true };
     } catch (error) {
+      console.error('登录错误:', error);
       return {
         success: false,
         message: error.message
@@ -197,8 +244,11 @@ const Auth = (() => {
   
   // 初始化认证模块
   const init = () => {
+    console.log('Auth模块初始化...');
+    
     // 如果已登录，直接进入房间选择页面
     if (isLoggedIn()) {
+      console.log('用户已登录，跳转到房间选择页面');
       UI.showScreen('room');
       return;
     }
@@ -282,6 +332,7 @@ const Auth = (() => {
       
       if (result.success) {
         // 切换到房间选择界面
+        console.log('登录成功，跳转到房间选择页面');
         UI.showScreen('room');
       } else {
         showMessage(result.message);
@@ -315,6 +366,7 @@ const Auth = (() => {
       
       if (result.success) {
         // 切换到房间选择界面
+        console.log('登录成功，跳转到房间选择页面');
         UI.showScreen('room');
       } else {
         showMessage(result.message);
@@ -323,9 +375,10 @@ const Auth = (() => {
     
     // 切换到注册模式
     toggleRegister.addEventListener('click', () => {
-      // TODO: 实现注册界面或弹窗
-      alert('注册功能即将推出，请先使用测试账号登录：\n账号：test\n密码：123456');
+      showMessage('可使用测试账号 test / 123456 登录，或手机号 13800000000 验证码 1234 登录', false);
     });
+    
+    console.log('Auth模块初始化完成');
   };
   
   // 导出公共方法

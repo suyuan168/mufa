@@ -1,0 +1,111 @@
+# 数据库检查与修复
+
+## 1. 检查MySQL服务状态
+```bash
+# 在服务器上执行
+systemctl status mysqld
+```
+
+## 2. 通过宝塔面板确认数据库设置
+1. 登录宝塔面板
+2. 在左侧菜单中点击"数据库"
+3. 确认"mufa"数据库已创建
+4. 确认用户"mufa"有权限访问该数据库
+
+## 3. 手动检查MySQL连接
+```bash
+# 连接到MySQL
+mysql -u mufa -p
+
+# 输入密码后执行
+USE mufa;
+SHOW TABLES;
+```
+
+## 4. 创建必要的数据表
+如果表不存在，请执行以下SQL脚本：
+
+```sql
+-- 用户表
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  phone_number VARCHAR(20) UNIQUE,
+  nickname VARCHAR(50) NOT NULL,
+  password VARCHAR(100) NOT NULL,
+  avatar VARCHAR(255) DEFAULT 'default.png',
+  level INT DEFAULT 1,
+  experience INT DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 游戏房间表
+CREATE TABLE IF NOT EXISTS game_rooms (
+  id VARCHAR(36) PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  host_id INT NOT NULL,
+  max_players INT DEFAULT 4,
+  is_private BOOLEAN DEFAULT FALSE,
+  password VARCHAR(50),
+  status ENUM('waiting', 'playing', 'ended') DEFAULT 'waiting',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (host_id) REFERENCES users(id)
+);
+
+-- 游戏存档表
+CREATE TABLE IF NOT EXISTS game_saves (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  room_id VARCHAR(36),
+  game_data JSON NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (room_id) REFERENCES game_rooms(id)
+);
+
+-- 添加测试用户
+INSERT INTO users (username, phone_number, nickname, password, level)
+VALUES 
+('test', '13800000000', '测试用户', '$2b$10$6Bnl2XByKQaEvRQo9fUYRexzvkVjsJ4HMxKrMJH5zMvRpssrIJovy', 1);
+```
+
+## 5. 确认数据库连接配置
+确保项目的.env文件包含正确的数据库配置：
+
+```
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=mufa
+DB_USER=mufa
+DB_PASSWORD=mufa123456
+```
+
+## 6. 重启应用以重新连接数据库
+```bash
+pm2 restart mufa
+```
+
+## 7. 检查应用日志中的数据库连接错误
+```bash
+pm2 logs mufa
+```
+
+## 8. 如果继续有问题，可以尝试将MySQL配置为允许远程连接（仅用于调试）
+```bash
+# 编辑MySQL配置文件
+vi /etc/my.cnf
+
+# 添加以下行到[mysqld]部分
+bind-address = 0.0.0.0
+
+# 重启MySQL
+systemctl restart mysqld
+
+# 授予远程访问权限
+mysql -u root -p
+GRANT ALL PRIVILEGES ON mufa.* TO 'mufa'@'%' IDENTIFIED BY 'mufa123456';
+FLUSH PRIVILEGES;
+```

@@ -1,0 +1,91 @@
+# PM2项目管理指南
+
+## 1. 删除PM2项目
+```bash
+# 查看所有PM2项目
+pm2 list
+
+# 删除指定项目（按名称）
+pm2 delete mufa
+
+# 删除指定项目（按ID）
+pm2 delete 1
+
+# 删除所有项目
+pm2 delete all
+```
+
+## 2. 停止项目（不删除）
+```bash
+# 停止指定项目
+pm2 stop mufa
+
+# 停止所有项目
+pm2 stop all
+```
+
+## 3. 重启项目
+```bash
+# 重启指定项目
+pm2 restart mufa
+
+# 重启所有项目
+pm2 restart all
+```
+
+## 4. 查看项目日志
+```bash
+# 查看指定项目日志
+pm2 logs mufa
+
+# 查看所有项目日志
+pm2 logs
+
+# 查看最近10行日志
+pm2 logs mufa --lines 10
+```
+
+## 5. 查看项目详情
+```bash
+# 查看项目详细信息
+pm2 show mufa
+```
+
+## 6. 创建新的PM2项目
+```bash
+# 基本启动
+pm2 start server/index.js --name mufa
+
+# 指定工作目录
+pm2 start server/index.js --name mufa --cwd /www/wwwroot/mufa.55860.com
+
+# 设置环境变量
+pm2 start server/index.js --name mufa --env production
+
+# 自动重启（崩溃后）
+pm2 start server/index.js --name mufa --watch
+```
+
+## 7. 保存PM2配置
+```bash
+# 保存当前配置（重启服务器后可以恢复）
+pm2 save
+
+# 设置PM2开机自启动
+pm2 startup
+```
+
+## 8. 重置PM2
+```bash
+# 杀死所有PM2进程
+pm2 kill
+
+# 清除PM2日志
+pm2 flush
+```
+
+## 9. 更新PM2
+```bash
+# 更新PM2到最新版本
+npm install pm2@latest -g
+```
