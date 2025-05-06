@@ -1,0 +1,29 @@
+-- 修复后的SQL插入语句
+
+-- 1. 查看users表的实际结构
+DESCRIBE users;
+
+-- 2. 根据实际结构插入测试用户
+INSERT INTO users (phone_number, nickname, password, level)
+VALUES ('13800000000', '测试用户', '$2b$10$6Bnl2XByKQaEvRQo9fUYRexzvkVjsJ4HMxKrMJH5zMvRpssrIJovy', 1);
+
+-- 或者，如果表结构字段为phoneNumber（可能性较小）
+INSERT INTO users (phoneNumber, nickname, password, level)
+VALUES ('13800000000', '测试用户', '$2b$10$6Bnl2XByKQaEvRQo9fUYRexzvkVjsJ4HMxKrMJH5zMvRpssrIJovy', 1);
+
+-- 3. 如果需要重建users表
+DROP TABLE IF EXISTS users;
+
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  phone_number VARCHAR(20) UNIQUE NOT NULL,
+  nickname VARCHAR(50) NOT NULL,
+  password VARCHAR(100) NOT NULL,
+  game_progress JSON DEFAULT '{"level": 1, "resources": {"wood": 0, "plastic": 0, "metal": 0, "food": 10, "water": 10}, "raftSize": 1, "items": [], "lastSaved": null}',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 插入测试用户
+INSERT INTO users (phone_number, nickname, password, level)
+VALUES ('13800000000', '测试用户', '$2b$10$6Bnl2XByKQaEvRQo9fUYRexzvkVjsJ4HMxKrMJH5zMvRpssrIJovy', 1);

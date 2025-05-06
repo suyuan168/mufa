@@ -9,13 +9,18 @@ const User = sequelize.define('User', {
     primaryKey: true,
     autoIncrement: true
   },
-  phoneNumber: {
+  phone_number: {
     type: DataTypes.STRING(20),
     allowNull: false,
     unique: true,
     validate: {
       is: /^\d{11}$/
     }
+  },
+  username: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    unique: true
   },
   password: {
     type: DataTypes.STRING,
@@ -24,6 +29,10 @@ const User = sequelize.define('User', {
   nickname: {
     type: DataTypes.STRING(50),
     allowNull: false
+  },
+  level: {
+    type: DataTypes.INTEGER,
+    defaultValue: 1
   },
   gameProgress: {
     type: DataTypes.JSON,
@@ -67,8 +76,12 @@ User.prototype.comparePassword = async function(password) {
 
 // 同步模型到数据库
 const syncUserModel = async () => {
-  await User.sync({ alter: true });
-  console.log("User模型已同步到数据库");
+  try {
+    await User.sync({ alter: true });
+    console.log("User模型已同步到数据库");
+  } catch (error) {
+    console.error("同步User模型时出错:", error);
+  }
 };
 
 module.exports = { User, syncUserModel }; 

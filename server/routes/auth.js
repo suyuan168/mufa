@@ -12,29 +12,30 @@ const validatePhoneNumber = (phoneNumber) => {
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { phoneNumber, password, nickname } = req.body;
+    const { phone_number, password, nickname, username } = req.body;
     
     // Validate fields
-    if (!phoneNumber || !password || !nickname) {
+    if (!phone_number || !password || !nickname) {
       return res.status(400).json({ message: '手机号、密码和昵称都是必填项' });
     }
 
     // Validate phone number format
-    if (!validatePhoneNumber(phoneNumber)) {
+    if (!validatePhoneNumber(phone_number)) {
       return res.status(400).json({ message: '请输入有效的手机号' });
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ where: { phoneNumber } });
+    const existingUser = await User.findOne({ where: { phone_number } });
     if (existingUser) {
       return res.status(400).json({ message: '该手机号已被注册' });
     }
 
     // Create new user
     const newUser = await User.create({
-      phoneNumber,
+      phone_number,
       password,
-      nickname
+      nickname,
+      username: username || phone_number // 使用手机号作为默认用户名
     });
 
     // Generate JWT token
@@ -48,8 +49,9 @@ router.post('/register', async (req, res) => {
       token,
       user: {
         id: newUser.id,
-        phoneNumber: newUser.phoneNumber,
-        nickname: newUser.nickname
+        phone_number: newUser.phone_number,
+        nickname: newUser.nickname,
+        username: newUser.username
       }
     });
   } catch (error) {
@@ -61,26 +63,36 @@ router.post('/register', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
   try {
-    const { phoneNumber, password } = req.body;
+    // 允许使用手机号或用户名登录
+    const { phone_number, username, password } = req.body;
     
-    // Validate fields
-    if (!phoneNumber || !password) {
-      return res.status(400).json({ message: '手机号和密码都是必填项' });
+    // 验证参数
+    if ((!phone_number && !username) || !password) {
+      return res.status(400).json({ message: '请提供手机号或用户名，以及密码' });
     }
 
-    // Find user
-    const user = await User.findOne({ where: { phoneNumber } });
+    // 查找用户 - 先尝试用手机号
+    let user = null;
+    if (phone_number) {
+      user = await User.findOne({ where: { phone_number } });
+    }
+    
+    // 如果没找到，尝试用用户名
+    if (!user && username) {
+      user = await User.findOne({ where: { username } });
+    }
+    
     if (!user) {
-      return res.status(400).json({ message: '该手机号未注册' });
+      return res.status(400).json({ message: '该账号未注册' });
     }
 
-    // Check password
+    // 检查密码
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: '密码错误' });
     }
 
-    // Generate JWT token
+    // 生成JWT令牌
     const token = jwt.sign(
       { id: user.id },
       process.env.JWT_SECRET || 'your_jwt_secret_key',
@@ -91,7 +103,8 @@ router.post('/login', async (req, res) => {
       token,
       user: {
         id: user.id,
-        phoneNumber: user.phoneNumber,
+        phone_number: user.phone_number,
+        username: user.username,
         nickname: user.nickname
       }
     });
