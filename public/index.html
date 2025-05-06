@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>木筏生存</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <style>
+    /* 改进登录界面样式 */
+    body {
+      font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+      background: linear-gradient(135deg, #1a4066 0%, #0c2033 100%);
+      color: #ffffff;
+    }
+    
+    .login-container {
+      background-color: rgba(10, 30, 50, 0.8);
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      max-width: 400px;
+      width: 90%;
+      margin: 0 auto;
+      text-align: center;
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 30px;
+      color: #4fc3f7;
+      text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+    }
+    
+    input {
+      flex: 1;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background-color: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+    
+    input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: #4fc3f7;
+      box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.3);
+    }
+    
+    button {
+      background-color: #4fc3f7;
+      color: #0a3b5e;
+      border: none;
+      border-radius: 8px;
+      padding: 15px 25px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-left: 10px;
+    }
+    
+    button:hover {
+      background-color: #81d4fa;
+      transform: translateY(-2px);
+    }
+    
+    button.btn-primary {
+      background-color: #4fc3f7;
+      width: 100%;
+      margin: 10px 0;
+    }
+    
+    .login-options {
+      display: flex;
+      margin: 20px 0;
+      justify-content: center;
+    }
+    
+    .login-option {
+      padding: 10px 20px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      margin: 0 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .login-option.active {
+      background-color: rgba(79, 195, 247, 0.2);
+      font-weight: bold;
+    }
+    
+    .toggle-login-mode {
+      color: #4fc3f7;
+      margin-top: 20px;
+      cursor: pointer;
+      display: inline-block;
+    }
+    
+    .room-container {
+      text-align: center;
+      padding: 30px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    .game-mode-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 登录界面 -->
+  <div id="login-screen" class="screen active">
+    <div class="login-container">
+      <h1>木筏生存 H5</h1>
+      
+      <div class="login-options">
+        <div class="login-option active" id="option-account">账号登录</div>
+        <div class="login-option" id="option-phone">手机登录</div>
+      </div>
+      
+      <!-- 账号密码登录 -->
+      <div id="account-login">
+        <div class="form-group">
+          <input type="text" id="username-input" placeholder="请输入账号" maxlength="20">
+        </div>
+        
+        <div class="form-group">
+          <input type="password" id="password-input" placeholder="请输入密码" maxlength="20">
+        </div>
+        
+        <button id="account-login-btn" class="btn-primary">登录游戏</button>
+      </div>
+      
+      <!-- 手机验证码登录 -->
+      <div id="phone-login" style="display:none;">
+        <div class="form-group">
+          <input type="tel" id="phone-input" placeholder="请输入手机号" maxlength="11">
+          <button id="send-code-btn">获取验证码</button>
+        </div>
+        
+        <div class="form-group">
+          <input type="text" id="code-input" placeholder="请输入验证码" maxlength="4">
+        </div>
+        
+        <button id="login-btn" class="btn-primary">登录游戏</button>
+      </div>
+      
+      <div id="login-message"></div>
+      
+      <div class="toggle-login-mode" id="toggle-register">没有账号？点击注册</div>
+    </div>
+  </div>
+  
+  <!-- 房间选择界面 -->
+  <div id="room-screen" class="screen" style="display:none;">
+    <div class="room-container">
+      <h2>选择游戏模式</h2>
+      
+      <div class="game-mode-buttons">
+        <button id="single-player-btn" class="btn-primary">单人模式</button>
+        <button id="create-room-btn" class="btn-primary">创建多人房间</button>
+        <button id="join-room-btn" class="btn-primary">加入房间</button>
+      </div>
+      
+      <div id="room-list" style="display:none;"></div>
+      
+      <div id="join-room-form" style="display:none;">
+        <input type="text" id="room-id-input" placeholder="输入房间ID">
+        <button id="confirm-join-btn">加入</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 游戏界面 -->
+  <div id="game-screen" class="screen" style="display:none;">
+    <canvas id="game-canvas"></canvas>
+    
+    <!-- 游戏UI元素将通过JS动态添加 -->
+  </div>
+  
+  <!-- 脚本加载 -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/simple-peer@9.11.0/simplepeer.min.js"></script>
+  <script src="/assets/js/auth.js"></script>
+  <script src="/assets/js/ui.js"></script>
+  <script src="/assets/js/game.js"></script>
+  <script src="/assets/js/weather.js"></script>
+  <script src="/assets/js/locations.js"></script>
+  <script src="/assets/js/npc.js"></script>
+  <script src="/assets/js/building.js"></script>
+  <script src="/assets/js/voice-chat.js"></script>
+  <script src="/assets/js/main.js"></script>
+</body>
+</html> 

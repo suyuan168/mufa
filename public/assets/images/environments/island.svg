@@ -1,0 +1,27 @@
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Island base -->
+  <ellipse cx="100" cy="130" rx="90" ry="25" fill="#D2B48C" />
+  
+  <!-- Sand gradient -->
+  <ellipse cx="100" cy="125" rx="80" ry="20" fill="#F5DEB3" />
+  
+  <!-- Island terrain -->
+  <path d="M60,115 Q80,95 100,105 Q120,90 140,110 L140,120 L60,120 Z" fill="#8B4513" />
+  
+  <!-- Palm tree 1 -->
+  <line x1="70" y1="115" x2="75" y2="85" stroke="#8B4513" stroke-width="4" />
+  <path d="M75,85 C65,75 60,70 50,75 C60,65 65,60 75,65 C85,55 95,50 105,60 C115,50 125,55 120,65 C130,65 135,75 120,80 C125,85 125,95 115,90 C115,100 105,105 100,95 C95,105 85,105 85,95 C75,100 65,95 75,85 Z" fill="#228B22" />
+  
+  <!-- Palm tree 2 -->
+  <line x1="125" y1="110" x2="120" y2="85" stroke="#8B4513" stroke-width="3" />
+  <path d="M120,85 C110,80 105,75 105,70 C115,65 120,70 115,75 C125,65 135,65 130,75 C140,70 145,75 135,80 C140,85 135,90 130,85 C125,95 115,90 120,85 Z" fill="#228B22" />
+  
+  <!-- Beach details -->
+  <ellipse cx="90" cy="122" rx="5" ry="2" fill="#D2B48C" />
+  <ellipse cx="130" cy="125" rx="8" ry="3" fill="#D2B48C" />
+  
+  <!-- Small rocks -->
+  <circle cx="60" cy="125" r="4" fill="#A9A9A9" />
+  <circle cx="65" cy="128" r="3" fill="#A9A9A9" />
+  <circle cx="140" cy="124" r="5" fill="#A9A9A9" />
+</svg> 

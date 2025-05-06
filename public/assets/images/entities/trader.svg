@@ -1,0 +1,33 @@
+<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Trader Character -->
+  
+  <!-- Body -->
+  <ellipse cx="32" cy="40" rx="12" ry="15" fill="#5D4037" />
+  
+  <!-- Head -->
+  <circle cx="32" cy="22" r="10" fill="#D7CCC8" />
+  
+  <!-- Hat -->
+  <path d="M20,22 C20,16 26,12 32,12 C38,12 44,16 44,22" fill="#4CAF50" />
+  <ellipse cx="32" cy="22" rx="14" ry="4" fill="#4CAF50" />
+  
+  <!-- Eyes -->
+  <circle cx="28" cy="20" r="2" fill="#263238" />
+  <circle cx="36" cy="20" r="2" fill="#263238" />
+  
+  <!-- Mouth (Smile) -->
+  <path d="M28,26 C30,29 34,29 36,26" fill="none" stroke="#263238" stroke-width="1" />
+  
+  <!-- Arms -->
+  <line x1="20" y1="35" x2="15" y2="45" stroke="#D7CCC8" stroke-width="4" stroke-linecap="round" />
+  <line x1="44" y1="35" x2="49" y2="45" stroke="#D7CCC8" stroke-width="4" stroke-linecap="round" />
+  
+  <!-- Legs -->
+  <line x1="28" y1="55" x2="26" y2="62" stroke="#D7CCC8" stroke-width="4" stroke-linecap="round" />
+  <line x1="36" y1="55" x2="38" y2="62" stroke="#D7CCC8" stroke-width="4" stroke-linecap="round" />
+  
+  <!-- Trade Goods -->
+  <rect x="15" y="45" width="10" height="6" fill="#795548" />
+  <rect x="49" y="45" width="6" height="6" fill="#FFC107" />
+  <circle cx="52" cy="48" r="2" fill="#FFEB3B" />
+</svg> 
