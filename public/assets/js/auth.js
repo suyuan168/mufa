@@ -1,24 +1,28 @@
 /**
  * Authentication Module
- * Handles user registration and login
+ * Handles user registration and login with verification code
  */
 const Auth = (() => {
   // DOM Elements - 账号密码登录
   const usernameInput = document.getElementById('username-input');
   const passwordInput = document.getElementById('password-input');
+  const loginCodeInput = document.getElementById('login-code-input');
+  const loginSendCodeBtn = document.getElementById('login-send-code-btn');
   const accountLoginBtn = document.getElementById('account-login-btn');
   
-  // DOM Elements - 手机验证码登录
-  const phoneInput = document.getElementById('phone-input');
-  const codeInput = document.getElementById('code-input');
-  const sendCodeBtn = document.getElementById('send-code-btn');
-  const loginBtn = document.getElementById('login-btn');
+  // DOM Elements - 账号注册
+  const registerUsernameInput = document.getElementById('register-username-input');
+  const registerPasswordInput = document.getElementById('register-password-input');
+  const nicknameInput = document.getElementById('nickname-input');
+  const registerCodeInput = document.getElementById('register-code-input');
+  const registerSendCodeBtn = document.getElementById('register-send-code-btn');
+  const registerBtn = document.getElementById('register-btn');
   
   // DOM Elements - 登录选项切换
   const optionAccount = document.getElementById('option-account');
-  const optionPhone = document.getElementById('option-phone');
+  const optionRegister = document.getElementById('option-register');
   const accountLogin = document.getElementById('account-login');
-  const phoneLogin = document.getElementById('phone-login');
+  const accountRegister = document.getElementById('account-register');
   const toggleRegister = document.getElementById('toggle-register');
   
   // 错误信息
@@ -64,14 +68,20 @@ const Auth = (() => {
   };
   
   // 发送验证码 - 永远成功
-  const sendVerificationCode = async (phone) => {
+  const sendVerificationCode = async (username) => {
     showMessage('验证码已发送: 1234', false);
     return { success: true };
   };
   
-  // 账号密码登录 - 永远成功，无验证
-  const loginWithAccount = async (username, password) => {
-    console.log(`尝试登录: 用户名=${username}, 密码长度=${password.length}`);
+  // 账号密码验证码登录 - 永远成功，简单验证
+  const loginWithAccount = async (username, password, code) => {
+    console.log(`尝试登录: 用户名=${username}, 密码长度=${password.length}, 验证码=${code}`);
+    
+    // 验证验证码 - 简化版本，固定验证码1234
+    if (code !== '1234') {
+      showMessage('验证码错误');
+      throw new Error('验证码错误');
+    }
     
     // 模拟用户数据
     const userData = {
@@ -84,15 +94,21 @@ const Auth = (() => {
     return simulateSuccessfulLogin(userData);
   };
   
-  // 手机验证码登录 - 永远成功，无验证
-  const loginWithPhone = async (phone, code) => {
-    console.log(`尝试手机登录: 手机=${phone}, 验证码=${code}`);
+  // 账号注册 - 永远成功，简单验证
+  const registerAccount = async (username, password, nickname, code) => {
+    console.log(`尝试注册: 用户名=${username}, 密码长度=${password.length}, 昵称=${nickname}, 验证码=${code}`);
+    
+    // 验证验证码 - 简化版本，固定验证码1234
+    if (code !== '1234') {
+      showMessage('验证码错误');
+      throw new Error('验证码错误');
+    }
     
     // 模拟用户数据
     const userData = {
       id: 1,
-      phone: phone || '13800000000',
-      nickname: '手机用户',
+      username: username,
+      nickname: nickname,
       level: 1
     };
     
@@ -138,44 +154,48 @@ const Auth = (() => {
     }
     
     // 登录选项切换
-    if (optionAccount && optionPhone && accountLogin && phoneLogin) {
+    if (optionAccount && optionRegister && accountLogin && accountRegister) {
       optionAccount.addEventListener('click', () => {
         optionAccount.classList.add('active');
-        optionPhone.classList.remove('active');
+        optionRegister.classList.remove('active');
         accountLogin.style.display = 'block';
-        phoneLogin.style.display = 'none';
+        accountRegister.style.display = 'none';
       });
       
-      optionPhone.addEventListener('click', () => {
-        optionPhone.classList.add('active');
+      optionRegister.addEventListener('click', () => {
+        optionRegister.classList.add('active');
         optionAccount.classList.remove('active');
-        phoneLogin.style.display = 'block';
+        accountRegister.style.display = 'block';
         accountLogin.style.display = 'none';
       });
     }
     
-    // 发送验证码
-    if (sendCodeBtn && phoneInput) {
-      sendCodeBtn.addEventListener('click', async () => {
-        const phone = phoneInput.value.trim();
+    // 发送登录验证码
+    if (loginSendCodeBtn && usernameInput) {
+      loginSendCodeBtn.addEventListener('click', async () => {
+        const username = usernameInput.value.trim();
         
-        // 简化版本：任何手机号都接受
+        if (!username) {
+          showMessage('请先输入账号');
+          return;
+        }
+        
         // 禁用按钮
-        sendCodeBtn.disabled = true;
-        sendCodeBtn.textContent = '发送中...';
+        loginSendCodeBtn.disabled = true;
+        loginSendCodeBtn.textContent = '发送中...';
         
-        const result = await sendVerificationCode(phone);
+        const result = await sendVerificationCode(username);
         
         // 倒计时
         let countdown = 5; // 缩短到5秒方便测试
         const timer = setInterval(() => {
-          sendCodeBtn.textContent = `${countdown}秒`;
+          loginSendCodeBtn.textContent = `${countdown}秒`;
           countdown--;
           
           if (countdown < 0) {
             clearInterval(timer);
-            sendCodeBtn.disabled = false;
-            sendCodeBtn.textContent = '获取验证码';
+            loginSendCodeBtn.disabled = false;
+            loginSendCodeBtn.textContent = '获取验证码';
           }
         }, 1000);
         
@@ -183,20 +203,57 @@ const Auth = (() => {
       });
     }
     
-    // 账号密码登录
-    if (accountLoginBtn && usernameInput && passwordInput) {
-      accountLoginBtn.addEventListener('click', async () => {
-        const username = usernameInput.value.trim() || 'guest';
-        const password = passwordInput.value || '123456';
+    // 发送注册验证码
+    if (registerSendCodeBtn && registerUsernameInput) {
+      registerSendCodeBtn.addEventListener('click', async () => {
+        const username = registerUsernameInput.value.trim();
         
-        // 简化版本：任何用户名密码都接受
+        if (!username) {
+          showMessage('请先输入账号');
+          return;
+        }
+        
+        // 禁用按钮
+        registerSendCodeBtn.disabled = true;
+        registerSendCodeBtn.textContent = '发送中...';
+        
+        const result = await sendVerificationCode(username);
+        
+        // 倒计时
+        let countdown = 5; // 缩短到5秒方便测试
+        const timer = setInterval(() => {
+          registerSendCodeBtn.textContent = `${countdown}秒`;
+          countdown--;
+          
+          if (countdown < 0) {
+            clearInterval(timer);
+            registerSendCodeBtn.disabled = false;
+            registerSendCodeBtn.textContent = '获取验证码';
+          }
+        }, 1000);
+        
+        showMessage('验证码: 1234', false);
+      });
+    }
+    
+    // 账号密码验证码登录
+    if (accountLoginBtn && usernameInput && passwordInput && loginCodeInput) {
+      accountLoginBtn.addEventListener('click', async () => {
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
+        const code = loginCodeInput.value.trim();
+        
+        if (!username || !password || !code) {
+          showMessage('请填写完整的账号、密码和验证码');
+          return;
+        }
         
         // 禁用按钮
         accountLoginBtn.disabled = true;
         accountLoginBtn.textContent = '登录中...';
         
         try {
-          await loginWithAccount(username, password);
+          await loginWithAccount(username, password, code);
         } catch (error) {
           console.error('登录出错:', error);
           showMessage('登录出错，请重试');
@@ -206,25 +263,30 @@ const Auth = (() => {
       });
     }
     
-    // 手机验证码登录
-    if (loginBtn && phoneInput && codeInput) {
-      loginBtn.addEventListener('click', async () => {
-        const phone = phoneInput.value.trim() || '13800000000';
-        const code = codeInput.value.trim() || '1234';
+    // 账号注册
+    if (registerBtn && registerUsernameInput && registerPasswordInput && nicknameInput && registerCodeInput) {
+      registerBtn.addEventListener('click', async () => {
+        const username = registerUsernameInput.value.trim();
+        const password = registerPasswordInput.value;
+        const nickname = nicknameInput.value.trim();
+        const code = registerCodeInput.value.trim();
         
-        // 简化版本：任何手机号和验证码都接受
+        if (!username || !password || !nickname || !code) {
+          showMessage('请填写完整的注册信息');
+          return;
+        }
         
         // 禁用按钮
-        loginBtn.disabled = true;
-        loginBtn.textContent = '登录中...';
+        registerBtn.disabled = true;
+        registerBtn.textContent = '注册中...';
         
         try {
-          await loginWithPhone(phone, code);
+          await registerAccount(username, password, nickname, code);
         } catch (error) {
-          console.error('登录出错:', error);
-          showMessage('登录出错，请重试');
-          loginBtn.disabled = false;
-          loginBtn.textContent = '登录游戏';
+          console.error('注册失败:', error);
+          showMessage('注册失败，请稍后再试');
+          registerBtn.disabled = false;
+          registerBtn.textContent = '注册账号';
         }
       });
     }
@@ -232,7 +294,8 @@ const Auth = (() => {
     // 切换到注册模式
     if (toggleRegister) {
       toggleRegister.addEventListener('click', () => {
-        showMessage('提示：输入任意账号密码即可登录，或使用任意手机号和验证码1234登录', false);
+        optionRegister.click();
+        showMessage('请填写注册信息，验证码为1234', false);
       });
     }
     
@@ -248,4 +311,4 @@ const Auth = (() => {
     logout,
     showMessage
   };
-})(); 
+})();}

@@ -6,6 +6,10 @@ const Shark = require('./Shark');
 const Weather = require('./Weather');
 const IslandLocation = require('./IslandLocation');
 const NPC = require('./NPC');
+const RaftBuilder = require('./RaftBuilder');
+const ResourceManager = require('./ResourceManager');
+const SurvivalSystem = require('./SurvivalSystem');
+const CooperationSystem = require('./CooperationSystem');
 
 class GameRoom {
   constructor(id, io) {
@@ -47,6 +51,18 @@ class GameRoom {
 
     // 天气系统
     this.weather = new Weather(this);
+    
+    // 木筏建造系统
+    this.raftBuilder = new RaftBuilder();
+    
+    // 资源管理系统
+    this.resourceManager = new ResourceManager();
+    
+    // 生存系统
+    this.survivalSystem = new SurvivalSystem();
+    
+    // 协作系统
+    this.cooperationSystem = new CooperationSystem();
 
     // 初始化房间
     this.initialize();
@@ -160,6 +176,7 @@ class GameRoom {
     this.updateSharks(deltaTime);
     this.updateLocations(deltaTime);
     this.updateNPCs(deltaTime);
+    this.updatePlayerSurvivalStates(deltaTime);
     this.spawnResources(now);
     this.spawnSharks(now);
     this.spawnLocations(now);
@@ -202,33 +219,26 @@ class GameRoom {
 
     this.state.lastResourceSpawn = now;
 
-    // 随机资源类型
-    const resourceTypes = ['wood', 'plastic', 'metal', 'food', 'water'];
-    const randomType = resourceTypes[Math.floor(Math.random() * resourceTypes.length)];
+    // 使用资源管理器生成随机资源
+    const resource = this.resourceManager.generateRandomResource(this.weather.currentWeather);
     
     // 随机位置 (在游戏区域边缘)
-    const position = this.getRandomEdgePosition();
-    
-    // 创建资源对象
-    const resource = {
-      id: `res_${now}_${Math.random().toString(36).substring(2, 9)}`,
-      type: randomType,
-      position,
-      createdAt: now
-    };
+    resource.position = this.getRandomEdgePosition();
     
     // 添加到资源列表
     this.resources.push(resource);
     
-    // 移除超过5分钟的旧资源
-    this.resources = this.resources.filter(r => now - r.createdAt < 300000);
+    // 移除超过过期时间的旧资源
+    const currentTime = now;
+    this.resources = this.resources.filter(r => !this.resourceManager.isResourceExpired(r, currentTime));
     
     // 广播资源生成
     this.io.to(this.id).emit('resource:spawn', resource);
     
     // 尝试生成天气相关特殊资源
-    const specialResource = this.weather.generateWeatherSpecificResources();
+    const specialResource = this.resourceManager.generateWeatherSpecificResource(this.weather.currentWeather);
     if (specialResource) {
+      specialResource.position = this.getRandomPositionInArea(300, 1000);
       this.resources.push(specialResource);
       
       // 广播特殊资源生成
@@ -434,11 +444,46 @@ class GameRoom {
     const player = this.players.get(socketId);
     if (!player) return null;
     
+    // 检查是否有协作任务
+    let cooperationBonus = 0;
+    const gatheringTasks = Array.from(this.cooperationSystem.activeCooperations.values())
+      .filter(task => 
+        task.type === 'resource_gathering' && 
+        task.status === 'in_progress' && 
+        task.participants.includes(socketId)
+      );
+    
+    if (gatheringTasks.length > 0) {
+      // 应用协作加成
+      const task = gatheringTasks[0]; // 使用第一个匹配的任务
+      const bonus = this.cooperationSystem.calculateCooperationBonus(task);
+      cooperationBonus = bonus.bonus;
+      
+      // 更新任务进度
+      this.cooperationSystem.updateTaskProgress(
+        task.id, 
+        Math.min(100, task.progress + 5), // 每收集一个资源增加5%进度
+        { lastResource: resource.type }
+      );
+    }
+    
+    // 应用生存系统更新
+    if (player.survivalState) {
+      // 收集资源消耗能量
+      player.survivalState = this.survivalSystem.takeDamage(
+        player.survivalState, 
+        1, // 消耗1点能量
+        'energy'
+      );
+    }
+    
     // 广播资源被收集
     this.io.to(this.id).emit('resource:collected', {
       resourceId,
       playerId: socketId,
-      playerName: player.nickname
+      playerName: player.nickname,
+      resourceType: resource.type,
+      cooperationBonus: cooperationBonus > 0 ? `+${Math.round(cooperationBonus * 100)}%` : null
     });
     
     return resource;
@@ -645,6 +690,111 @@ class GameRoom {
     };
   }
 
+  // 更新所有玩家的生存状态
+  updatePlayerSurvivalStates(deltaTime) {
+    for (const [socketId, player] of this.players.entries()) {
+      // 如果玩家没有生存状态，初始化一个
+      if (!player.survivalState) {
+        player.survivalState = this.survivalSystem.initializePlayerSurvivalState();
+      }
+      
+      // 更新玩家的生存状态
+      player.survivalState = this.survivalSystem.updateSurvivalState(
+        player.survivalState,
+        deltaTime,
+        this.weather.currentWeather,
+        this.weather.currentTime
+      );
+      
+      // 检查玩家是否存活
+      if (!this.survivalSystem.isPlayerAlive(player.survivalState)) {
+        // 玩家死亡处理
+        this.onPlayerDeath(socketId, 'survival');
+      }
+      
+      // 如果生存状态发生重大变化，通知玩家
+      if (player.survivalState.isHungry || 
+          player.survivalState.isThirsty || 
+          player.survivalState.isInjured || 
+          player.survivalState.isCold || 
+          player.survivalState.isHot) {
+        
+        const status = this.survivalSystem.getSurvivalStatusDescription(player.survivalState);
+        
+        // 向玩家发送生存状态更新
+        this.io.to(socketId).emit('survival:update', {
+          survivalState: player.survivalState,
+          status: status
+        });
+      }
+    }
+  }
+  
+  // 处理玩家死亡
+  onPlayerDeath(socketId, cause) {
+    const player = this.players.get(socketId);
+    if (!player) return;
+    
+    // 广播玩家死亡事件
+    this.io.to(this.id).emit('player:death', {
+      playerId: socketId,
+      playerName: player.nickname,
+      cause: cause
+    });
+    
+    console.log(`玩家 ${player.nickname} 在房间 ${this.id} 中死亡，原因: ${cause}`);
+    
+    // 重置玩家生存状态
+    player.survivalState = this.survivalSystem.initializePlayerSurvivalState();
+    
+    // 掉落部分资源
+    if (player.inventory) {
+      // 随机选择一些资源掉落
+      const resourceTypes = Object.keys(player.inventory);
+      const dropCount = Math.min(3, resourceTypes.length);
+      
+      for (let i = 0; i < dropCount; i++) {
+        const randomIndex = Math.floor(Math.random() * resourceTypes.length);
+        const resourceType = resourceTypes[randomIndex];
+        
+        // 移除已选择的资源类型，避免重复
+        resourceTypes.splice(randomIndex, 1);
+        
+        // 掉落一半的资源
+        const amount = Math.ceil(player.inventory[resourceType] / 2);
+        if (amount <= 0) continue;
+        
+        // 创建掉落资源
+        const resource = {
+          id: `res_death_${resourceType}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          type: resourceType,
+          name: this.resourceManager.getResourceInfo(resourceType)?.name || resourceType,
+          amount: amount,
+          position: { ...player.position },
+          createdAt: Date.now(),
+          expiresAt: Date.now() + 300000, // 5分钟后过期
+          fromDeath: true
+        };
+        
+        // 添加到资源列表
+        this.resources.push(resource);
+        
+        // 广播资源生成
+        this.io.to(this.id).emit('resource:death_drop', {
+          resource,
+          playerId: socketId,
+          playerName: player.nickname
+        });
+        
+        // 减少玩家库存
+        player.inventory[resourceType] -= amount;
+      }
+    }
+    
+    // 将玩家移动到安全位置
+    player.position = { x: 0, y: 0 };
+  }
+  
   // 广播游戏状态给所有玩家
   broadcastGameState() {
     // 只广播经常变化的数据以减少数据量
@@ -654,9 +804,23 @@ class GameRoom {
       players: Array.from(this.players.entries()).map(([id, player]) => ({
         id,
         position: player.position,
-        raftHealth: player.raftHealth
+        raftHealth: player.raftHealth,
+        survivalStatus: player.survivalState ? {
+          hunger: player.survivalState.hunger,
+          thirst: player.survivalState.thirst,
+          health: player.survivalState.health,
+          energy: player.survivalState.energy,
+          isHungry: player.survivalState.isHungry,
+          isThirsty: player.survivalState.isThirsty,
+          isInjured: player.survivalState.isInjured
+        } : null
       })),
-      weather: this.weather.getWeatherState()
+      weather: this.weather.getWeatherState(),
+      resources: this.resources.map(resource => ({
+        id: resource.id,
+        type: resource.type,
+        position: resource.position
+      }))
     };
     
     this.io.to(this.id).emit('game:state', gameState);
@@ -676,4 +840,4 @@ class GameRoom {
   }
 }
 
-module.exports = GameRoom; 
+module.exports = GameRoom;
